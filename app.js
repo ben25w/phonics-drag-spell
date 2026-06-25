@@ -202,7 +202,7 @@ function renderBoxes() {
     const box = document.createElement('div');
     box.className = 'letter-box' + (letter ? ' filled' : '');
     box.dataset.index = idx;
-    box.textContent   = letter ? letter.toUpperCase() : '';
+    box.textContent   = letter || '';
     box.addEventListener('click', () => handleBoxClick(idx));
     container.appendChild(box);
   });
@@ -215,7 +215,7 @@ function renderKeyboard() {
     const tile = document.createElement('div');
     tile.className      = 'key-tile';
     tile.dataset.letter = letter;
-    tile.textContent    = letter.toUpperCase();
+    tile.textContent    = letter;
     if (letter === state.selectedLetter) tile.classList.add('selected');
     container.appendChild(tile);
   });
@@ -375,7 +375,7 @@ document.addEventListener('touchstart', e => {
   if (!tile) return;
   e.preventDefault();
   dragLetter = tile.dataset.letter;
-  ghostEl.textContent  = dragLetter.toUpperCase();
+  ghostEl.textContent  = dragLetter;
   ghostEl.style.display = 'flex';
   moveGhost(e.touches[0].clientX, e.touches[0].clientY);
 }, { passive: false });
