@@ -5,6 +5,7 @@
 - Live API checks pass for stages, words, and R2-backed images.
 - Remote D1 `phonics-db` has 14 stages and 131 words.
 - Remote R2 `phonics-images` has the 131 local `.jpg` files uploaded.
+- Repaired 43 image files that had been saved from a Pixabay rate-limit response instead of real image data.
 - Linear has not been updated yet.
 
 ## ✅ Fixed: Pictures not showing
@@ -12,6 +13,7 @@
 - [x] Updated API functions to support the deployed D1 binding (`phonics-db`).
 - [x] Added `/api/images/:key` to serve images from the deployed R2 bucket binding.
 - [x] Seeded remote D1 and uploaded all 131 images to R2.
+- [x] Replaced 42 `Rate limit exceeded` text files and converted `rip.jpg` from PNG bytes to a true JPEG.
 - [x] Verified `https://phonics-drag-spell.pages.dev/api/images/sat.jpg` returns a JPEG.
 
 ## ✅ Done
