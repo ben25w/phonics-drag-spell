@@ -320,7 +320,7 @@ function checkAnswer() {
     if (state.triesLeft <= 0) {
       state.status = 'showing-answer';
       setBoxClass('wrong');
-      showFeedback('show-answer', correct.toUpperCase().split('').join(' '));
+      showFeedback('show-answer', correct.split('').join(' '));
       setTimeout(nextWord, 2600);
     } else {
       state.status = 'wrong';
