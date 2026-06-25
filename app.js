@@ -351,8 +351,9 @@ function showEndScreen() {
   showScreen('screen-end');
 }
 
-// ─── Touch Drag ───────────────────────────────────────────
+// ─── Pointer Drag ─────────────────────────────────────────
 let dragLetter = null;
+let activePointerId = null;
 const ghostEl  = document.getElementById('ghost-tile');
 
 function getBoxUnderPoint(x, y) {
@@ -364,56 +365,69 @@ function getBoxUnderPoint(x, y) {
 }
 
 function moveGhost(x, y) {
-  const half = 32; // half of --tile-size
+  const half = (ghostEl.offsetWidth || 64) / 2;
   ghostEl.style.left = (x - half) + 'px';
   ghostEl.style.top  = (y - half) + 'px';
 }
 
-document.addEventListener('touchstart', e => {
-  if (state.inputMode !== 'drag' || state.status !== 'idle') return;
-  const tile = e.target.closest('.key-tile');
-  if (!tile) return;
-  e.preventDefault();
-  dragLetter = tile.dataset.letter;
-  ghostEl.textContent  = dragLetter;
-  ghostEl.style.display = 'flex';
-  moveGhost(e.touches[0].clientX, e.touches[0].clientY);
-}, { passive: false });
-
-document.addEventListener('touchmove', e => {
-  if (!dragLetter) return;
-  e.preventDefault();
-  const { clientX, clientY } = e.touches[0];
-  moveGhost(clientX, clientY);
-
-  // Highlight box under finger
+function clearDragTarget() {
   document.querySelectorAll('.letter-box').forEach(b => b.classList.remove('drag-over'));
-  const box = getBoxUnderPoint(clientX, clientY);
+}
+
+function highlightDragTarget(x, y) {
+  clearDragTarget();
+  const box = getBoxUnderPoint(x, y);
   if (box && state.boxes[parseInt(box.dataset.index)] === null) {
     box.classList.add('drag-over');
   }
-}, { passive: false });
+}
 
-document.addEventListener('touchend', e => {
-  if (!dragLetter) return;
+function stopDrag() {
+  dragLetter = null;
+  activePointerId = null;
   ghostEl.style.display = 'none';
-  document.querySelectorAll('.letter-box').forEach(b => b.classList.remove('drag-over'));
+  clearDragTarget();
+}
 
-  const { clientX, clientY } = e.changedTouches[0];
+document.addEventListener('pointerdown', e => {
+  if (state.inputMode !== 'drag' || state.status !== 'idle') return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+  const tile = e.target.closest('.key-tile');
+  if (!tile) return;
+
+  e.preventDefault();
+  activePointerId = e.pointerId;
+  dragLetter = tile.dataset.letter;
+  ghostEl.textContent  = dragLetter;
+  ghostEl.style.display = 'flex';
+  moveGhost(e.clientX, e.clientY);
+  highlightDragTarget(e.clientX, e.clientY);
+});
+
+document.addEventListener('pointermove', e => {
+  if (!dragLetter || e.pointerId !== activePointerId) return;
+  e.preventDefault();
+  const { clientX, clientY } = e;
+  moveGhost(clientX, clientY);
+  highlightDragTarget(clientX, clientY);
+});
+
+document.addEventListener('pointerup', e => {
+  if (!dragLetter || e.pointerId !== activePointerId) return;
+
+  const { clientX, clientY } = e;
   const box = getBoxUnderPoint(clientX, clientY);
   if (box) placeLetter(parseInt(box.dataset.index), dragLetter);
 
-  dragLetter = null;
+  stopDrag();
 });
 
-// Cancel drag if touch is interrupted
-document.addEventListener('touchcancel', () => {
-  dragLetter = null;
-  ghostEl.style.display = 'none';
-  document.querySelectorAll('.letter-box').forEach(b => b.classList.remove('drag-over'));
+document.addEventListener('pointercancel', e => {
+  if (e.pointerId === activePointerId) stopDrag();
 });
 
-// ─── Click delegation (tap mode + mouse testing on desktop) ──
+// ─── Click delegation (tap mode) ──────────────────────────
 document.addEventListener('click', e => {
   const tile = e.target.closest('.key-tile');
   if (tile) handleKeyTileClick(tile.dataset.letter);
@@ -454,8 +468,7 @@ async function init() {
 
   // Game
   document.getElementById('btn-exit-game').addEventListener('click', () => {
-    dragLetter = null;
-    ghostEl.style.display = 'none';
+    stopDrag();
     showScreen('screen-splash');
   });
 
