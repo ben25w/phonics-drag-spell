@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Phonics CVC Words</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-content">
+      <h1 class="app-title">Phonics<br><span>CVC Words</span></h1>
+      <div class="splash-buttons">
+        <button class="btn btn-primary" id="btn-quick-start">Quick Start</button>
+        <button class="btn btn-ghost" id="btn-options">Choose Options</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="screen-settings" class="screen">
+    <div class="settings-content">
+      <h2>Options</h2>
+
+      <div class="setting-row">
+        <span class="setting-label">Stage</span>
+        <select id="stage-select"></select>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Input</span>
+        <div class="btn-group" id="input-mode-group">
+          <button class="toggle active" data-value="drag">Drag</button>
+          <button class="toggle" data-value="tap">Tap</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Tries</span>
+        <div class="btn-group" id="tries-group">
+          <button class="toggle" data-value="1">1</button>
+          <button class="toggle active" data-value="3">3</button>
+          <button class="toggle" data-value="5">5</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Keyboard</span>
+        <div class="btn-group" id="keyboard-layout-group">
+          <button class="toggle active" data-value="intro">Taught Order</button>
+          <button class="toggle" data-value="qwerty">QWERTY</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-start">Start!</button>
+      <button class="btn btn-text" id="btn-back-from-settings">← Back</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="screen">
+    <div class="game-header">
+      <button class="btn-icon" id="btn-exit-game">✕</button>
+      <div class="game-progress" id="game-progress">1 / 10</div>
+      <div class="game-tries" id="game-tries"></div>
+    </div>
+
+    <div class="picture-area">
+      <div class="picture-frame">
+        <img id="word-image" src="" alt="Guess this word">
+        <div class="img-placeholder">🖼️</div>
+      </div>
+    </div>
+
+    <div class="boxes-area" id="letter-boxes"></div>
+
+    <div class="feedback-area" id="feedback"></div>
+
+    <div class="keyboard-area" id="keyboard"></div>
+  </div>
+
+  <!-- END -->
+  <div id="screen-end" class="screen">
+    <div class="end-content">
+      <div class="end-star">⭐</div>
+      <h2>Well Done!</h2>
+      <p id="end-score"></p>
+      <button class="btn btn-primary" id="btn-play-again">Play Again</button>
+      <button class="btn btn-ghost" id="btn-new-game">Change Options</button>
+    </div>
+  </div>
+
+  <!-- Ghost tile for drag -->
+  <div id="ghost-tile" class="ghost-tile"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
