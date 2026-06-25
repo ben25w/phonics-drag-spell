@@ -80,7 +80,6 @@ INSERT INTO words (word, image_url, stage) VALUES ('pig',  'pig.jpg',  4);
 INSERT INTO words (word, image_url, stage) VALUES ('nag',  'nag.jpg',  4);
 INSERT INTO words (word, image_url, stage) VALUES ('tag',  'tag.jpg',  4);
 INSERT INTO words (word, image_url, stage) VALUES ('gig',  'gig.jpg',  4);
-INSERT INTO words (word, image_url, stage) VALUES ('big',  'big.jpg',  4);
 
 -- Stage 5: + O
 INSERT INTO words (word, image_url, stage) VALUES ('top',  'top.jpg',  5);

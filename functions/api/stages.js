@@ -1,7 +1,9 @@
 export async function onRequestGet(context) {
-  const db = context.env.DB;
+  const db = context.env.DB || context.env['phonics-db'];
 
   try {
+    if (!db) throw new Error('D1 binding missing: expected DB or phonics-db');
+
     const { results } = await db
       .prepare('SELECT * FROM stages ORDER BY stage ASC')
       .all();
