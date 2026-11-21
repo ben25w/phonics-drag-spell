@@ -411,6 +411,32 @@ select {
   opacity: 0.3;
 }
 
+/* Speaker button on the picture */
+.btn-speak {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  width: calc(var(--tile-size) * 0.9);
+  height: calc(var(--tile-size) * 0.9);
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+.btn-speak:active, .btn-speak.speaking { transform: scale(0.92); }
+.btn-speak.speaking { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); }
+.btn-speak svg {
+  width: 55%; height: 55%;
+  fill: none; stroke: currentColor; stroke-width: 2.2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
 /* Letter Boxes */
 .boxes-area {
   flex: 0 0 auto;

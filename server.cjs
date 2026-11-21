@@ -27,13 +27,50 @@ function seedData() {
   return { stages, words };
 }
 
+// Local dev only: in-memory stand-in for the audio API (passcode: "test").
+const audioStore = {}; // word -> { type, buf, source, v }
+function readBody(req) {
+  return new Promise(r => { const c = []; req.on('data', d => c.push(d)); req.on('end', () => r(Buffer.concat(c))); });
+}
+const EXTS = { 'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/wav': 'wav' };
+
+async function audioApi(req, res) {
+  const json = (code, body) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
+  const u = new URL(req.url, 'http://x');
+  if (u.pathname === '/api/audio-check' || req.method !== 'GET') {
+    if (req.headers['x-passcode'] !== 'test') return json(401, { error: 'Wrong passcode' });
+  }
+  if (u.pathname === '/api/audio-check') return json(200, { ok: true });
+  const key = decodeURIComponent(u.pathname.replace('/api/audio/', ''));
+  const word = key.split('.')[0];
+  if (req.method === 'GET') {
+    const a = audioStore[word];
+    if (!a) { res.writeHead(404); return res.end('Not found'); }
+    res.writeHead(200, { 'Content-Type': a.type }); return res.end(a.buf);
+  }
+  if (req.method === 'PUT') {
+    const type = (req.headers['content-type'] || '').split(';')[0];
+    if (!EXTS[type]) return json(415, { error: 'Unsupported audio type: ' + type });
+    const source = u.searchParams.get('source') === 'ai' ? 'ai' : 'teacher';
+    if (source === 'ai' && audioStore[word] && audioStore[word].source === 'teacher') return json(409, { error: 'A teacher recording already exists' });
+    audioStore[word] = { type, buf: await readBody(req), source, v: Date.now(), ext: EXTS[type] };
+    return json(200, { ok: true, word, source });
+  }
+  if (req.method === 'DELETE') { delete audioStore[word]; return json(200, { ok: true }); }
+  json(405, { error: 'Method not allowed' });
+}
+
 http.createServer((req, res) => {
+  if (req.url.startsWith('/api/audio')) { audioApi(req, res); return; }
   if (req.url.startsWith('/api/')) {
     const { stages, words } = seedData();
     const stage = +(new URL(req.url, 'http://x').searchParams.get('stage') || 1);
     const body = req.url.startsWith('/api/stages')
       ? { stages }
-      : { words: words.filter(w => w.stage <= stage) };
+      : { words: words.filter(w => w.stage <= stage).map(w => {
+          const a = audioStore[w.word];
+          return { ...w, audio_url: a ? `/api/audio/${w.word}.${a.ext}?v=${a.v}` : '', audio_source: a ? a.source : '' };
+        }) };
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(body));
     return;

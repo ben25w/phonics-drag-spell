@@ -25,7 +25,9 @@ const prefs = {
   letters: null,   // letters in play; null = use stage letters
   focus: '',       // word must contain this letter ('' = any)
   excluded: [],    // words the teacher has left out
-  length: 10       // words per round, 0 = all
+  length: 10,      // words per round, 0 = all
+  autosay: false,  // say each word when it appears
+  mineOnly: false  // only words with a teacher recording
 };
 
 function loadPrefs() {
@@ -41,6 +43,8 @@ function loadPrefs() {
     if (typeof s.focus === 'string') prefs.focus = s.focus;
     if (Array.isArray(s.excluded)) prefs.excluded = s.excluded.filter(w => typeof w === 'string');
     if ([0, 5, 10, 20].includes(s.length)) prefs.length = s.length;
+    if (typeof s.autosay === 'boolean') prefs.autosay = s.autosay;
+    if (typeof s.mineOnly === 'boolean') prefs.mineOnly = s.mineOnly;
   } catch { /* storage unavailable: use defaults */ }
 }
 
@@ -190,6 +194,73 @@ async function fetchWords(stageNum) {
   }
 }
 
+// ─── Saying the word ──────────────────────────────────────
+// Order: teacher recording or pre-made voice (audio_url), then the browser's own voice.
+const voiceEl = new Audio();
+let voicesCache = [];
+let speakingTimer = null;
+
+function loadVoices() {
+  if ('speechSynthesis' in window) voicesCache = speechSynthesis.getVoices();
+}
+if ('speechSynthesis' in window) {
+  loadVoices();
+  speechSynthesis.addEventListener('voiceschanged', loadVoices);
+}
+
+function pickVoice() {
+  const gb = voicesCache.filter(v => /^en[-_]GB/i.test(v.lang));
+  const preferred = ['Daniel', 'Kate', 'Serena', 'Google UK English Female', 'Google UK English Male'];
+  for (const name of preferred) {
+    const v = gb.find(x => x.name.includes(name));
+    if (v) return v;
+  }
+  return gb[0] || voicesCache.find(v => /^en/i.test(v.lang)) || null;
+}
+
+function setSpeaking(on) {
+  const btn = document.getElementById('btn-speak');
+  btn.classList.toggle('speaking', on);
+  clearTimeout(speakingTimer);
+  if (on) speakingTimer = setTimeout(() => btn.classList.remove('speaking'), 2500);
+}
+
+function speakSynth(text) {
+  if (!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-GB';
+  u.rate = 0.8;
+  const v = pickVoice();
+  if (v) u.voice = v;
+  u.onend = () => setSpeaking(false);
+  speechSynthesis.cancel();
+  setSpeaking(true);
+  speechSynthesis.speak(u);
+}
+
+function speakWord(word) {
+  if (!word) return;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  voiceEl.pause();
+  if (word.audio_url) {
+    voiceEl.src = word.audio_url;
+    voiceEl.onended = () => setSpeaking(false);
+    setSpeaking(true);
+    voiceEl.play().catch(() => speakSynth(word.word));
+  } else {
+    speakSynth(word.word);
+  }
+}
+
+// Browsers (iPad especially) only allow sound after a tap, so the first tap
+// anywhere quietly unlocks the audio player for later automatic playback.
+document.addEventListener('pointerdown', function unlock() {
+  document.removeEventListener('pointerdown', unlock);
+  voiceEl.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+  voiceEl.play().then(() => voiceEl.pause()).catch(() => {});
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+}, { once: true });
+
 // ─── Screen Navigation ────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -238,8 +309,11 @@ function candidateWords() {
     (!prefs.focus || w.word.toLowerCase().includes(prefs.focus)));
 }
 
+const hasTeacherVoice = w => w.audio_source === 'teacher';
+
 function playableWords() {
-  return candidateWords().filter(w => !prefs.excluded.includes(w.word));
+  return candidateWords().filter(w =>
+    !prefs.excluded.includes(w.word) && (!prefs.mineOnly || hasTeacherVoice(w)));
 }
 
 function refreshWordsUI() {
@@ -285,7 +359,7 @@ function refreshWordsUI() {
     const off = prefs.excluded.includes(w.word);
     const b = document.createElement('button');
     b.className = 'word-chip' + (off ? ' off' : '');
-    b.textContent = w.word;
+    b.textContent = w.word + (hasTeacherVoice(w) ? ' 🎙' : '');
     b.setAttribute('aria-pressed', !off);
     b.addEventListener('click', () => {
       prefs.excluded = off ? prefs.excluded.filter(x => x !== w.word) : [...prefs.excluded, w.word];
@@ -295,11 +369,17 @@ function refreshWordsUI() {
     list.appendChild(b);
   });
 
-  const ready = cands.length - cands.filter(w => prefs.excluded.includes(w.word)).length;
-  const left = cands.length - ready;
+  const playable = playableWords();
+  const ready = playable.length;
+  const left = cands.filter(w => prefs.excluded.includes(w.word)).length;
+  const mine = playable.filter(hasTeacherVoice).length;
+  const anyMine = state.allWords.some(hasTeacherVoice);
   document.getElementById('word-count').textContent =
     prefs.letters.length === 0 ? 'Pick at least one letter'
-      : `${ready} word${ready === 1 ? '' : 's'} ready` + (left ? ` · ${left} left out` : '');
+      : (prefs.mineOnly && !anyMine) ? 'No recordings yet (see the recording page)'
+      : `${ready} word${ready === 1 ? '' : 's'} ready` +
+        (left ? ` · ${left} left out` : '') +
+        (anyMine && !prefs.mineOnly ? ` · ${mine} in your voice` : '');
   document.getElementById('btn-start').disabled = ready === 0;
 }
 
@@ -370,6 +450,7 @@ function loadWord() {
   renderKeyboard();
   clearFeedback();
   fitLayout();
+  if (prefs.autosay) setTimeout(() => { if (state.words[state.wordIndex] === word) speakWord(word); }, 500);
 }
 
 // ─── Render ───────────────────────────────────────────────
@@ -651,6 +732,8 @@ async function init() {
   setActiveToggle('keyboard-layout-group', prefs.keyboard);
   setActiveToggle('tries-group', String(prefs.tries));
   setActiveToggle('length-group', String(prefs.length));
+  setActiveToggle('voice-group', prefs.mineOnly ? 'mine' : 'any');
+  setActiveToggle('autosay-group', prefs.autosay ? 'on' : 'off');
   refreshWordsUI();
 
   // Settings toggles
@@ -660,6 +743,9 @@ async function init() {
   bindToggleGroup('keyboard-layout-group', v => { prefs.keyboard = v; savePrefs(); });
   bindToggleGroup('tries-group',           v => { prefs.tries = parseInt(v); savePrefs(); });
   bindToggleGroup('length-group',          v => { prefs.length = parseInt(v); savePrefs(); });
+  bindToggleGroup('voice-group',           v => { prefs.mineOnly = v === 'mine'; savePrefs(); refreshWordsUI(); });
+  bindToggleGroup('autosay-group',         v => { prefs.autosay = v === 'on'; savePrefs(); });
+  document.getElementById('btn-speak').addEventListener('click', () => speakWord(state.words[state.wordIndex]));
 
   // Word selection controls
   document.getElementById('stage-select').addEventListener('change', e => {
@@ -699,6 +785,8 @@ async function init() {
   // Game
   document.getElementById('btn-exit-game').addEventListener('click', () => {
     stopDrag();
+    voiceEl.pause();
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
     showScreen('screen-splash');
   });
 

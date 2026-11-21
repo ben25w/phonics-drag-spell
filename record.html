@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-font="print">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Record words · Phonics Drag &amp; Spell</title>
+  <link rel="stylesheet" href="https://benwiddowson.com/site/v1/tokens.css">
+  <link rel="stylesheet" href="https://benwiddowson.com/site/v1/base.css">
+  <style>
+    @font-face { font-family: 'Andika'; src: url('fonts/andika-bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg-page); color: var(--text-body); font-family: var(--font-body, system-ui, sans-serif); }
+    main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+    h1 { font-size: 1.6rem; margin: 0 0 0.25rem; color: var(--text-heading); }
+    p.sub { margin: 0 0 1.25rem; color: var(--text-muted); }
+    button { font: inherit; cursor: pointer; }
+    .btn { border: 0; border-radius: 12px; padding: 0.7rem 1.2rem; font-weight: 700; background: var(--accent); color: var(--text-on-accent); min-height: 44px; }
+    .btn.secondary { background: var(--surface-card); color: var(--text-heading); border: 2px solid var(--border-subtle); }
+    .btn.danger { background: var(--status-danger); color: #fff; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    input[type=password] { font: inherit; padding: 0.7rem 0.9rem; border: 2px solid var(--border-subtle); border-radius: 12px; background: var(--surface-card); color: var(--text-heading); min-height: 44px; }
+    .card { background: var(--surface-card); border: 2px solid var(--border-subtle); border-radius: 16px; padding: 1rem; margin-bottom: 1rem; }
+    .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+    #msg { min-height: 1.4em; margin: 0.5rem 0 0; font-weight: 600; }
+    #msg.err { color: var(--status-danger); }
+
+    /* Current word card */
+    #current { display: grid; grid-template-columns: minmax(0, 12rem) 1fr; gap: 1rem; align-items: center; }
+    #current img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--bg-page); border-radius: 12px; }
+    #cur-word { font-family: 'Andika', 'Comic Sans MS', sans-serif; font-weight: 700; font-size: 3.2rem; line-height: 1; color: var(--text-heading); margin: 0 0 0.3rem; }
+    #cur-status { margin: 0 0 0.8rem; color: var(--text-muted); }
+    #rec-btn { min-width: 11rem; font-size: 1.15rem; padding: 0.9rem 1.4rem; }
+    #rec-btn.recording { background: var(--status-danger); animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.7; } }
+    @media (max-width: 520px) { #current { grid-template-columns: 1fr; } }
+
+    /* Progress */
+    .stage-head { display: flex; justify-content: space-between; align-items: baseline; margin: 1.4rem 0 0.4rem; color: var(--text-heading); font-weight: 800; }
+    .stage-head small { color: var(--text-muted); font-weight: 600; }
+    .bar { height: 8px; background: var(--border-subtle); border-radius: 99px; overflow: hidden; margin-bottom: 0.5rem; }
+    .bar > span { display: block; height: 100%; background: var(--status-success); }
+    .words { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .w { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.75rem; min-height: 44px; border-radius: 999px; border: 2px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); font-family: 'Andika', 'Comic Sans MS', sans-serif; font-weight: 700; font-size: 1.1rem; }
+    .w .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--border-subtle); }
+    .w.teacher .dot { background: var(--status-success); }
+    .w.ai .dot { background: #e0a100; }
+    .w.sel { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+    .legend { display: flex; gap: 1rem; font-size: 0.9rem; color: var(--text-muted); margin-top: 0.4rem; }
+    .legend i { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.3rem; vertical-align: middle; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Record the words</h1>
+  <p class="sub">Say each word clearly, on its own. Children hear your voice from the speaker button in the game.</p>
+
+  <!-- Passcode -->
+  <section class="card" id="lock">
+    <p style="margin-top:0">Enter the recording passcode.</p>
+    <form class="row" id="lock-form">
+      <input type="password" id="passcode" autocomplete="current-password" aria-label="Passcode">
+      <button class="btn" type="submit">Unlock</button>
+    </form>
+    <p id="lock-msg" class="err" style="margin-bottom:0"></p>
+  </section>
+
+  <!-- Recorder -->
+  <div id="app" hidden>
+    <section class="card" id="current">
+      <img id="cur-img" alt="">
+      <div>
+        <p id="cur-word">…</p>
+        <p id="cur-status"></p>
+        <div class="row">
+          <button class="btn" id="rec-btn">● Record</button>
+          <button class="btn secondary" id="play-btn" hidden>▶ Play</button>
+          <button class="btn secondary" id="next-btn">Next missing →</button>
+          <button class="btn secondary danger-text" id="del-btn" hidden>Delete</button>
+        </div>
+        <p id="msg"></p>
+      </div>
+    </section>
+
+    <div class="legend">
+      <span><i style="background:var(--status-success)"></i>Your voice</span>
+      <span><i style="background:#e0a100"></i>AI voice</span>
+      <span><i style="background:var(--border-subtle)"></i>None yet</span>
+    </div>
+    <div id="stages"></div>
+  </div>
+</main>
+<script src="record.js"></script>
+</body>
+</html>

@@ -82,6 +82,14 @@
         </div>
       </div>
 
+      <div class="setting-row">
+        <span class="setting-label">Voice</span>
+        <div class="btn-group" id="voice-group">
+          <button class="toggle active" data-value="any">Any word</button>
+          <button class="toggle" data-value="mine">My recordings only</button>
+        </div>
+      </div>
+
       <details class="word-panel" id="word-panel">
         <summary><span id="word-count">0 words ready</span></summary>
         <p class="word-hint">Tap a word to leave it out (for example if the picture isn't clear).</p>
@@ -95,6 +103,14 @@
         <div class="btn-group" id="input-mode-group">
           <button class="toggle active" data-value="drag">Drag</button>
           <button class="toggle" data-value="tap">Tap</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Hear word</span>
+        <div class="btn-group" id="autosay-group">
+          <button class="toggle active" data-value="off">Button only</button>
+          <button class="toggle" data-value="on">Say it automatically</button>
         </div>
       </div>
 
@@ -162,6 +178,9 @@
       <div class="picture-frame">
         <img id="word-image" src="" alt="Guess this word">
         <div class="img-placeholder">🖼️</div>
+        <button class="btn-speak" id="btn-speak" aria-label="Hear the word">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        </button>
       </div>
     </div>
 

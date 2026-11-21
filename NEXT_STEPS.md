@@ -19,6 +19,14 @@
 - `server.cjs` serves the real stages and words from `seed.sql` locally, so no Cloudflare is needed to try it.
 - This settles the "current stage only vs all words up to the stage" question: both are one tap.
 
+## Phase 3 built locally, not yet deployed
+- Speaker button on the picture; plays your recording, else a pre-made AI voice, else the browser's British voice. Options: "Say it automatically" and "My recordings only".
+- `record.html` is the teacher recording page (progress per stage, record / play / re-record / delete). Needs the passcode secret: `wrangler pages secret put ADMIN_PASSCODE --project-name phonics-drag-spell`.
+- Audio is stored in the existing R2 bucket under `audio/<word>.<ext>` (no database change). On the live site the bucket binding is named `R2_PUBLIC_URL`.
+- `scripts/generate-ai-voices.mjs` fills gaps with OpenAI voices (needs `OPENAI_API_KEY`; not run yet; never overwrites your recordings).
+- Local dev: `server.cjs` has an in-memory audio API, passcode `test`.
+- Not tested: real microphone recording on iPad/Safari, and the R2 upload on the live site.
+
 ## Next decisions
 - Choose and configure a proper public URL, for example a custom Cloudflare Pages domain under `benwiddowson.com`.
 - Decide the proper app name and update the browser title and splash screen.
