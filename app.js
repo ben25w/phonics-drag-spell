@@ -15,6 +15,78 @@ const state = {
   stages: []
 };
 
+// ─── Saved display settings (size + letter font) ──────────
+const SETTINGS_KEY = 'phonics-drag-spell-settings';
+const display = { size: 'normal', font: 'print' };
+
+function loadDisplaySettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (['normal', 'large', 'xl'].includes(saved.size)) display.size = saved.size;
+    if (['print', 'cursive'].includes(saved.font)) display.font = saved.font;
+  } catch { /* storage unavailable: use defaults */ }
+}
+
+function saveDisplaySettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(display)); } catch { /* ignore */ }
+}
+
+function applyDisplaySettings() {
+  document.documentElement.dataset.size = display.size;
+  document.documentElement.dataset.font = display.font;
+  setActiveToggle('size-group', display.size);
+  setActiveToggle('font-group', display.font);
+  fitLayout();
+}
+
+function setActiveToggle(groupId, value) {
+  document.getElementById(groupId).querySelectorAll('.toggle').forEach(b =>
+    b.classList.toggle('active', b.dataset.value === value));
+}
+
+// Shrink tiles/boxes just enough that nothing overflows (many letters,
+// long words, short screens). CSS sizes everything from --fit.
+function fitLayout() {
+  const root = document.documentElement;
+  root.style.setProperty('--fit', '1');
+  if (!document.getElementById('screen-game').classList.contains('active')) return;
+  const kb = document.getElementById('keyboard');
+  const bx = document.getElementById('letter-boxes');
+  const overflows = () =>
+    kb.scrollHeight > kb.clientHeight + 1 || bx.scrollWidth > bx.clientWidth + 1;
+  let fit = 1;
+  while (overflows() && fit > 0.4) {
+    fit = Math.round((fit - 0.05) * 100) / 100;
+    root.style.setProperty('--fit', String(fit));
+  }
+}
+
+// ─── Fullscreen ───────────────────────────────────────────
+function fullscreenSupported() {
+  const el = document.documentElement;
+  return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function toggleFullscreen() {
+  try {
+    if (isFullscreen()) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      const el = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    }
+  } catch { /* not allowed: ignore */ }
+}
+
+function syncFullscreenState() {
+  document.documentElement.classList.toggle('is-fullscreen', isFullscreen());
+  fitLayout();
+}
+
 // ─── Demo data (used when D1 database is not yet set up) ──
 const DEMO_STAGES = [
   { stage: 1, label: 'SATPIN',  letters: 's,a,t,p,i,n' },
@@ -188,6 +260,7 @@ function loadWord() {
   renderBoxes();
   renderKeyboard();
   clearFeedback();
+  fitLayout();
 }
 
 // ─── Render ───────────────────────────────────────────────
@@ -310,7 +383,7 @@ function checkAnswer() {
     state.status = 'correct';
     playSound('correct');
     setBoxClass('correct');
-    showFeedback('correct', '✓ Correct!');
+    showFeedback('correct', '✓ ' + correct);
     setTimeout(nextWord, 1800);
   } else {
     state.triesLeft--;
@@ -435,10 +508,26 @@ document.addEventListener('click', e => {
 
 // ─── Init ─────────────────────────────────────────────────
 async function init() {
+  loadDisplaySettings();
+  applyDisplaySettings();
+
+  // Fullscreen (hidden where the browser can't do it, e.g. iPhone)
+  if (fullscreenSupported()) {
+    document.querySelectorAll('.btn-fullscreen').forEach(btn => {
+      btn.hidden = false;
+      btn.addEventListener('click', toggleFullscreen);
+    });
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+  }
+  window.addEventListener('resize', fitLayout);
+
   state.stages = await fetchStages();
   populateStageSelect(state.stages);
 
   // Settings toggles
+  bindToggleGroup('size-group', v => { display.size = v; saveDisplaySettings(); applyDisplaySettings(); });
+  bindToggleGroup('font-group', v => { display.font = v; saveDisplaySettings(); applyDisplaySettings(); });
   bindToggleGroup('input-mode-group',     v => { state.inputMode = v; });
   bindToggleGroup('keyboard-layout-group', v => { state.keyboardLayout = v; });
   bindToggleGroup('tries-group',          v => { state.maxTries = parseInt(v); });

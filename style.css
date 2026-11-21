@@ -1,3 +1,31 @@
+/* ─── Fonts (self-hosted; see fonts/README.md) ───────────── */
+/* Andika: single-storey a, g and y, designed for early readers. */
+@font-face {
+  font-family: 'Andika';
+  src: url('fonts/andika-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Andika';
+  src: url('fonts/andika-bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+/* Playwrite GB S: UK school cursive, unjoined. GB J: joined. */
+@font-face {
+  font-family: 'Playwrite GB S';
+  src: url('fonts/playwrite-gb-s.ttf') format('truetype');
+  font-weight: 100 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playwrite GB J';
+  src: url('fonts/playwrite-gb-j.ttf') format('truetype');
+  font-weight: 100 400;
+  font-display: swap;
+}
+
 /* ─── Variables ──────────────────────────────────────────── */
 :root {
   --blue: #3d88e8;
@@ -7,19 +35,45 @@
   --bg: #f0f6ff;
   --white: #ffffff;
   --tile-border: #bcd4f5;
-  --tile-size: 64px;
-  --box-size: 74px;
   --radius: 14px;
   --shadow: 0 4px 14px rgba(0,0,0,0.12);
+
+  /* Size system. --u is ~1% of the screen (whichever is the limiting side),
+     multiplied by the Size setting. --fit is shrunk by app.js if a long
+     word or many letters would otherwise overflow. */
+  --size-mult: 1;
+  --fit: 1;
+  --u: calc(min(1vw, 1.8vh) * var(--size-mult));
+  --tile-min: 64px;
+  --box-min: 74px;
+  --tile-u: 7;
+  --box-u: 8.5;
+  --tile-size: max(calc(var(--tile-min) * var(--size-mult) * var(--fit)), calc(var(--u) * var(--tile-u) * var(--fit)));
+  --box-size:  max(calc(var(--box-min)  * var(--size-mult) * var(--fit)), calc(var(--u) * var(--box-u) * var(--fit)));
+
+  /* Letter fonts. Single-storey a (round, no curl on top) in both. */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-letters: 'Andika', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+  --font-word: var(--font-letters);
+}
+html[data-size="large"] { --size-mult: 1.25; }
+html[data-size="xl"]    { --size-mult: 1.5; }
+html[data-font="cursive"] {
+  --font-letters: 'Playwrite GB S', 'Snell Roundhand', 'Apple Chancery', cursive;
+  --font-word:    'Playwrite GB J', 'Snell Roundhand', 'Apple Chancery', cursive;
 }
 
 /* ─── Reset ──────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  /* rem scales with the screen, so every rem-sized thing gets bigger on a board */
+  font-size: max(calc(16px * var(--size-mult)), calc(var(--u) * 1.15));
+}
 html, body {
   height: 100%;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   background: var(--bg);
   color: #1a1a2e;
   -webkit-tap-highlight-color: transparent;
@@ -43,7 +97,7 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 36px;
+  padding: 0.8rem 2rem;
   border: none;
   border-radius: var(--radius);
   font-size: 1.2rem;
@@ -56,28 +110,39 @@ html, body {
 
 .btn-primary  { background: var(--blue); color: #fff; }
 .btn-ghost    { background: rgba(255,255,255,0.28); color: #fff; border: 2px solid rgba(255,255,255,0.5); }
-.btn-text     { background: none; color: #888; font-size: 1rem; padding: 12px; }
+.btn-text     { background: none; color: #666; font-size: 1rem; padding: 0.6rem; }
 
 .btn-icon {
   background: rgba(0,0,0,0.08);
   border: none;
   border-radius: 50%;
-  width: 42px; height: 42px;
-  font-size: 1rem;
+  width: 2.7rem; height: 2.7rem;
+  font-size: 1.05rem;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  color: #333;
 }
+.btn-icon[hidden] { display: none; }
+.btn-icon svg {
+  width: 55%; height: 55%;
+  fill: none; stroke: currentColor; stroke-width: 2.4;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.btn-fullscreen .icon-collapse { display: none; }
+.is-fullscreen .btn-fullscreen .icon-expand   { display: none; }
+.is-fullscreen .btn-fullscreen .icon-collapse { display: block; }
 
-.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; }
 
 .toggle {
-  padding: 10px 18px;
+  padding: 0.6rem 1.1rem;
   border: 2px solid var(--tile-border);
   background: var(--white);
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   color: #555;
   transition: all 0.15s;
@@ -95,11 +160,17 @@ html, body {
   justify-content: center;
   background: linear-gradient(160deg, #3d88e8 0%, #6fa8f5 100%);
 }
+.splash-fullscreen {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: rgba(255,255,255,0.28);
+  color: #fff;
+}
 .splash-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 52px;
+  gap: 3rem;
 }
 .app-title {
   text-align: center;
@@ -113,53 +184,54 @@ html, body {
 .splash-buttons {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: 280px;
+  gap: 1rem;
+  width: 18rem;
 }
 .splash-buttons .btn {
   width: 100%;
   font-size: 1.4rem;
-  padding: 20px;
+  padding: 1.1rem;
 }
 .splash-buttons .btn-primary { background: #fff; color: var(--blue); }
 
 /* ─── Settings ───────────────────────────────────────────── */
 #screen-settings {
   align-items: center;
-  justify-content: center;
   background: var(--bg);
+  overflow-y: auto;
+  touch-action: pan-y;
 }
 .settings-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 22px;
+  gap: 1.1rem;
   width: 100%;
-  max-width: 480px;
-  padding: 32px 24px;
+  max-width: 34rem;
+  padding: 2rem 1.5rem;
+  margin: auto;
 }
 .settings-content h2 {
   font-size: 2rem;
   font-weight: 800;
   color: var(--blue-dark);
-  margin-bottom: 8px;
 }
 .setting-row {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 1rem;
 }
 .setting-label {
   font-size: 1.05rem;
   font-weight: 700;
   color: #444;
-  min-width: 78px;
+  min-width: 5rem;
 }
 select {
   flex: 1;
-  padding: 10px 14px;
+  padding: 0.6rem 0.9rem;
   border: 2px solid var(--tile-border);
   border-radius: 10px;
   font-size: 1rem;
@@ -171,8 +243,24 @@ select {
 .settings-content .btn-primary {
   width: 100%;
   font-size: 1.3rem;
-  margin-top: 8px;
+  margin-top: 0.4rem;
 }
+
+/* Font preview: shows exactly how a, g, y etc. will look in the game */
+.font-preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.8rem 1rem;
+  background: var(--white);
+  border: 2px solid var(--tile-border);
+  border-radius: var(--radius);
+  color: #1a1a2e;
+}
+.font-preview-letters { font-family: var(--font-letters); font-size: 2.4rem; font-weight: 700; letter-spacing: 0.25em; line-height: 1.4; }
+.font-preview-word    { font-family: var(--font-word);    font-size: 1.8rem; line-height: 1.4; }
 
 /* ─── Game ───────────────────────────────────────────────── */
 #screen-game { background: var(--bg); }
@@ -181,10 +269,11 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  height: 58px;
+  padding: 0.6rem 1rem;
+  min-height: 3.6rem;
   flex-shrink: 0;
 }
+.header-left { display: flex; align-items: center; gap: 0.6rem; }
 .game-progress {
   font-size: 1.05rem;
   font-weight: 700;
@@ -193,7 +282,7 @@ select {
 .game-tries {
   font-size: 1.3rem;
   letter-spacing: 2px;
-  min-width: 80px;
+  min-width: 5rem;
   text-align: right;
 }
 
@@ -206,11 +295,11 @@ select {
   padding: 8px 20px;
   height: 38vh;
   min-height: 150px;
-  max-height: 290px;
+  max-height: max(290px, calc(var(--u) * 20));
 }
 .picture-frame {
   width: 100%;
-  max-width: 340px;
+  max-width: max(340px, calc(var(--u) * 28));
   height: 100%;
   background: var(--white);
   border-radius: 22px;
@@ -240,21 +329,24 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: calc(var(--box-size) * 0.14);
   padding: 10px 16px;
-  height: 98px;
+  min-height: calc(var(--box-size) + 24px);
 }
 .letter-box {
+  flex: 0 0 auto;
   width: var(--box-size);
   height: var(--box-size);
   border: 3px dashed #a8c8f0;
-  border-radius: 14px;
+  border-radius: calc(var(--box-size) * 0.19);
   background: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.2rem;
-  font-weight: 900;
+  font-family: var(--font-letters);
+  font-size: calc(var(--box-size) * 0.62);
+  font-weight: 700;
+  line-height: 1;
   color: #1a1a2e;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, transform 0.15s;
@@ -287,41 +379,45 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 46px;
-  font-size: 1.4rem;
+  min-height: calc(var(--tile-size) * 0.75);
+  font-size: calc(var(--tile-size) * 0.4);
   font-weight: 800;
+  line-height: 1.2;
 }
-.feedback-area.correct { color: var(--green); }
+.feedback-area.correct { color: var(--green); font-family: var(--font-word); font-weight: 700; }
 .feedback-area.wrong   { color: var(--red); }
 .feedback-area.show-answer {
   color: var(--blue-dark);
-  font-size: 2.2rem;
-  letter-spacing: 10px;
+  font-family: var(--font-letters);
+  font-size: calc(var(--tile-size) * 0.6);
+  letter-spacing: 0.3em;
 }
 
 /* Keyboard */
 .keyboard-area {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
   justify-content: center;
-  gap: 8px;
+  gap: calc(var(--tile-size) * 0.12);
   padding: 10px 14px 16px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 .key-tile {
   width: var(--tile-size);
   height: var(--tile-size);
   background: var(--white);
   border: 2.5px solid var(--tile-border);
-  border-radius: 12px;
+  border-radius: calc(var(--tile-size) * 0.19);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.9rem;
-  font-weight: 900;
+  font-family: var(--font-letters);
+  font-size: calc(var(--tile-size) * 0.6);
+  font-weight: 700;
+  line-height: 1;
   color: #1a1a2e;
   text-transform: lowercase;
   cursor: pointer;
@@ -345,12 +441,14 @@ select {
   height: var(--tile-size);
   background: var(--blue);
   color: #fff;
-  border-radius: 12px;
+  border-radius: calc(var(--tile-size) * 0.19);
   display: none;
   align-items: center;
   justify-content: center;
-  font-size: 1.9rem;
-  font-weight: 900;
+  font-family: var(--font-letters);
+  font-size: calc(var(--tile-size) * 0.6);
+  font-weight: 700;
+  line-height: 1;
   pointer-events: none;
   z-index: 1000;
   opacity: 0.92;
@@ -368,10 +466,10 @@ select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 1.5rem;
   text-align: center;
   color: #fff;
-  padding: 24px;
+  padding: 1.5rem;
 }
 .end-star {
   font-size: 5.5rem;
@@ -383,18 +481,47 @@ select {
 }
 .end-content h2  { font-size: 3.2rem; font-weight: 900; }
 .end-content p   { font-size: 1.3rem; opacity: 0.92; }
-.end-content .btn { min-width: 230px; font-size: 1.2rem; }
+.end-content .btn { min-width: 14rem; font-size: 1.2rem; }
 .end-content .btn-primary { background: #fff; color: var(--green); }
 
 /* ─── Responsive ─────────────────────────────────────────── */
 @media (min-width: 768px) {
-  :root { --tile-size: 70px; --box-size: 80px; }
+  :root { --tile-min: 70px; --box-min: 80px; }
   .app-title { font-size: 4.5rem; }
+  .app-title span { font-size: 3.4rem; }
 }
 
 @media (orientation: landscape) and (max-height: 520px) {
+  :root { --tile-min: 54px; --box-min: 62px; }
   .picture-area { max-height: 170px; }
-  :root { --tile-size: 54px; --box-size: 62px; }
-  .letter-box { font-size: 1.7rem; }
-  .key-tile   { font-size: 1.5rem; }
+}
+
+/* Wide screens (laptops, interactive boards, iPad landscape):
+   picture on the left, answer boxes and letters on the right. */
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  :root { --tile-u: 8.5; --box-u: 9.5; }
+  #screen-game.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "header   header"
+      "picture  boxes"
+      "picture  feedback"
+      "picture  keyboard";
+  }
+  .game-header   { grid-area: header; }
+  .picture-area  {
+    grid-area: picture;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    padding: 0.5rem 1rem 2rem 2rem;
+  }
+  .picture-frame { max-width: none; border-radius: 2rem; }
+  #word-image    { padding: 2rem; }
+  .img-placeholder { font-size: 8rem; }
+  .boxes-area    { grid-area: boxes; padding: 1rem 2rem 0.5rem 1rem; }
+  .feedback-area { grid-area: feedback; }
+  .keyboard-area { grid-area: keyboard; padding: 0.5rem 2rem 2rem 1rem; align-content: center; }
 }

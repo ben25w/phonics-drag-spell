@@ -7,6 +7,12 @@
 - Remote R2 `phonics-images` has 131 valid JPEG images.
 - Linear has not been updated yet.
 
+## Done locally, not yet deployed (see PLAN.md, Phase 1)
+- Renamed to "Phonics Drag & Spell".
+- Everything scales with the screen; wide screens use a picture-left / letters-right layout; Size setting (Normal / Large / Extra large) and fullscreen button.
+- Letter font picker (Print / Cursive) saved between sessions. Andika and Playwrite GB S/J are in `fonts/`.
+- Correct answers now show the finished word instead of "Correct!".
+
 ## Next decisions
 - Choose and configure a proper public URL, for example a custom Cloudflare Pages domain under `benwiddowson.com`.
 - Decide the proper app name and update the browser title and splash screen.

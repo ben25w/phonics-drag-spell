@@ -1,17 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-size="normal" data-font="print">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Phonics CVC Words</title>
+  <title>Phonics Drag &amp; Spell</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <!-- SPLASH -->
   <div id="screen-splash" class="screen active">
+    <button class="btn-icon btn-fullscreen splash-fullscreen" aria-label="Toggle fullscreen" hidden>
+      <svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      <svg class="icon-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+    </button>
     <div class="splash-content">
-      <h1 class="app-title">Phonics<br><span>CVC Words</span></h1>
+      <h1 class="app-title">Phonics<br><span>Drag &amp; Spell</span></h1>
       <div class="splash-buttons">
         <button class="btn btn-primary" id="btn-quick-start">Quick Start</button>
         <button class="btn btn-ghost" id="btn-options">Choose Options</button>
@@ -54,6 +58,28 @@
         </div>
       </div>
 
+      <div class="setting-row">
+        <span class="setting-label">Size</span>
+        <div class="btn-group" id="size-group">
+          <button class="toggle active" data-value="normal">Normal</button>
+          <button class="toggle" data-value="large">Large</button>
+          <button class="toggle" data-value="xl">Extra large</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Letters</span>
+        <div class="btn-group" id="font-group">
+          <button class="toggle active" data-value="print">Print</button>
+          <button class="toggle" data-value="cursive">Cursive</button>
+        </div>
+      </div>
+
+      <div class="font-preview" id="font-preview" aria-hidden="true">
+        <span class="font-preview-letters">a g t y s p</span>
+        <span class="font-preview-word">sat pig dog</span>
+      </div>
+
       <button class="btn btn-primary" id="btn-start">Start!</button>
       <button class="btn btn-text" id="btn-back-from-settings">← Back</button>
     </div>
@@ -62,7 +88,13 @@
   <!-- GAME -->
   <div id="screen-game" class="screen">
     <div class="game-header">
-      <button class="btn-icon" id="btn-exit-game">✕</button>
+      <div class="header-left">
+        <button class="btn-icon" id="btn-exit-game" aria-label="Exit">✕</button>
+        <button class="btn-icon btn-fullscreen" aria-label="Toggle fullscreen" hidden>
+          <svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          <svg class="icon-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+        </button>
+      </div>
       <div class="game-progress" id="game-progress">1 / 10</div>
       <div class="game-tries" id="game-tries"></div>
     </div>
