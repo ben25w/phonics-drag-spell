@@ -52,10 +52,43 @@
     <div class="settings-content">
       <h2>Options</h2>
 
+      <h3 class="settings-heading">Which words?</h3>
+
       <div class="setting-row">
-        <span class="setting-label">Stage</span>
+        <span class="setting-label">Up to stage</span>
         <select id="stage-select"></select>
       </div>
+
+      <div class="letter-picker" id="letter-picker" role="group" aria-label="Letters to use"></div>
+
+      <div class="quick-picks">
+        <button class="chip-btn" id="btn-letters-all">All letters</button>
+        <button class="chip-btn" id="btn-letters-clear">Clear</button>
+        <button class="chip-btn" id="btn-letters-new">New letter only</button>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Must include</span>
+        <select id="focus-select"></select>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Round</span>
+        <div class="btn-group" id="length-group">
+          <button class="toggle" data-value="5">5 words</button>
+          <button class="toggle active" data-value="10">10</button>
+          <button class="toggle" data-value="20">20</button>
+          <button class="toggle" data-value="0">All</button>
+        </div>
+      </div>
+
+      <details class="word-panel" id="word-panel">
+        <summary><span id="word-count">0 words ready</span></summary>
+        <p class="word-hint">Tap a word to leave it out (for example if the picture isn't clear).</p>
+        <div class="word-list" id="word-list"></div>
+      </details>
+
+      <h3 class="settings-heading">How to play</h3>
 
       <div class="setting-row">
         <span class="setting-label">Input</span>
@@ -81,6 +114,8 @@
           <button class="toggle" data-value="qwerty">QWERTY</button>
         </div>
       </div>
+
+      <h3 class="settings-heading">How it looks</h3>
 
       <div class="setting-row">
         <span class="setting-label">Size</span>

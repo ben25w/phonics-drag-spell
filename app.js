@@ -12,30 +12,47 @@ const state = {
   selectedLetter: null,
   status: 'idle',
   correctCount: 0,
-  stages: []
+  stages: [],
+  allWords: []
 };
 
-// ─── Saved display settings (size + letter font) ──────────
+// ─── Saved settings (everything in Options is remembered) ─
 const SETTINGS_KEY = 'phonics-drag-spell-settings';
-const display = { size: 'normal', font: 'print' };
+const prefs = {
+  size: 'normal', font: 'print',
+  tries: 3, input: 'drag', keyboard: 'intro',
+  stage: 1,        // last "Up to stage" quick pick
+  letters: null,   // letters in play; null = use stage letters
+  focus: '',       // word must contain this letter ('' = any)
+  excluded: [],    // words the teacher has left out
+  length: 10       // words per round, 0 = all
+};
 
-function loadDisplaySettings() {
+function loadPrefs() {
   try {
-    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    if (['normal', 'large', 'xl'].includes(saved.size)) display.size = saved.size;
-    if (['print', 'cursive'].includes(saved.font)) display.font = saved.font;
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (['normal', 'large', 'xl'].includes(s.size)) prefs.size = s.size;
+    if (['print', 'cursive'].includes(s.font)) prefs.font = s.font;
+    if ([1, 3, 5].includes(s.tries)) prefs.tries = s.tries;
+    if (['drag', 'tap'].includes(s.input)) prefs.input = s.input;
+    if (['intro', 'qwerty'].includes(s.keyboard)) prefs.keyboard = s.keyboard;
+    if (Number.isInteger(s.stage)) prefs.stage = s.stage;
+    if (Array.isArray(s.letters)) prefs.letters = s.letters.filter(l => typeof l === 'string');
+    if (typeof s.focus === 'string') prefs.focus = s.focus;
+    if (Array.isArray(s.excluded)) prefs.excluded = s.excluded.filter(w => typeof w === 'string');
+    if ([0, 5, 10, 20].includes(s.length)) prefs.length = s.length;
   } catch { /* storage unavailable: use defaults */ }
 }
 
-function saveDisplaySettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(display)); } catch { /* ignore */ }
+function savePrefs() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(prefs)); } catch { /* ignore */ }
 }
 
 function applyDisplaySettings() {
-  document.documentElement.dataset.size = display.size;
-  document.documentElement.dataset.font = display.font;
-  setActiveToggle('size-group', display.size);
-  setActiveToggle('font-group', display.font);
+  document.documentElement.dataset.size = prefs.size;
+  document.documentElement.dataset.font = prefs.font;
+  setActiveToggle('size-group', prefs.size);
+  setActiveToggle('font-group', prefs.font);
   fitLayout();
 }
 
@@ -202,21 +219,113 @@ function populateStageSelect(stages) {
   });
 }
 
+// ─── Word selection ───────────────────────────────────────
+function letterOrder() {
+  const last = state.stages[state.stages.length - 1];
+  return last.letters.split(',').map(l => l.trim());
+}
+
+function lettersForStage(stageNum) {
+  const st = state.stages.find(s => +s.stage === +stageNum) || state.stages[0];
+  return st.letters.split(',').map(l => l.trim());
+}
+
+// Words whose letters are all ticked (and that contain the focus letter).
+function candidateWords() {
+  const set = new Set(prefs.letters);
+  return state.allWords.filter(w =>
+    [...w.word.toLowerCase()].every(c => set.has(c)) &&
+    (!prefs.focus || w.word.toLowerCase().includes(prefs.focus)));
+}
+
+function playableWords() {
+  return candidateWords().filter(w => !prefs.excluded.includes(w.word));
+}
+
+function refreshWordsUI() {
+  const order = letterOrder();
+  const set = new Set(prefs.letters);
+
+  // Letter chips
+  const picker = document.getElementById('letter-picker');
+  picker.innerHTML = '';
+  order.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'letter-chip' + (set.has(l) ? ' active' : '');
+    b.textContent = l;
+    b.setAttribute('aria-pressed', set.has(l));
+    b.addEventListener('click', () => {
+      if (set.has(l)) prefs.letters = prefs.letters.filter(x => x !== l);
+      else prefs.letters = order.filter(x => set.has(x) || x === l);
+      if (prefs.focus && !prefs.letters.includes(prefs.focus)) prefs.focus = '';
+      savePrefs();
+      refreshWordsUI();
+    });
+    picker.appendChild(b);
+  });
+
+  // "Must include" options (only letters currently ticked)
+  const focus = document.getElementById('focus-select');
+  focus.innerHTML = '';
+  const any = document.createElement('option');
+  any.value = ''; any.textContent = 'Any letter';
+  focus.appendChild(any);
+  order.filter(l => set.has(l)).forEach(l => {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    focus.appendChild(o);
+  });
+  focus.value = prefs.focus;
+
+  // Word list: everything that matches, with left-out words dimmed
+  const cands = candidateWords();
+  const list = document.getElementById('word-list');
+  list.innerHTML = '';
+  cands.forEach(w => {
+    const off = prefs.excluded.includes(w.word);
+    const b = document.createElement('button');
+    b.className = 'word-chip' + (off ? ' off' : '');
+    b.textContent = w.word;
+    b.setAttribute('aria-pressed', !off);
+    b.addEventListener('click', () => {
+      prefs.excluded = off ? prefs.excluded.filter(x => x !== w.word) : [...prefs.excluded, w.word];
+      savePrefs();
+      refreshWordsUI();
+    });
+    list.appendChild(b);
+  });
+
+  const ready = cands.length - cands.filter(w => prefs.excluded.includes(w.word)).length;
+  const left = cands.length - ready;
+  document.getElementById('word-count').textContent =
+    prefs.letters.length === 0 ? 'Pick at least one letter'
+      : `${ready} word${ready === 1 ? '' : 's'} ready` + (left ? ` · ${left} left out` : '');
+  document.getElementById('btn-start').disabled = ready === 0;
+}
+
+function setLetters(letters, focus = '') {
+  prefs.letters = letterOrder().filter(l => letters.includes(l));
+  prefs.focus = focus;
+  savePrefs();
+  refreshWordsUI();
+}
+
 // ─── Game Setup ───────────────────────────────────────────
-async function startGame(stageNum, maxTries, inputMode, kbLayout) {
-  state.stage       = stageNum;
-  state.maxTries    = maxTries;
-  state.inputMode   = inputMode;
-  state.keyboardLayout = kbLayout;
+function startGame() {
+  const pool = playableWords();
+  if (pool.length === 0) { showScreen('screen-settings'); return; }
+
+  state.maxTries       = prefs.tries;
+  state.inputMode      = prefs.input;
+  state.keyboardLayout = prefs.keyboard;
   state.correctCount   = 0;
   state.wordIndex      = 0;
   state.status         = 'idle';
+  state.stageLetters   = letterOrder().filter(l => prefs.letters.includes(l));
 
-  const stageData = state.stages.find(s => +s.stage === +stageNum) || DEMO_STAGES[0];
-  state.stageLetters = stageData.letters.split(',').map(l => l.trim());
-
-  const words = await fetchWords(stageNum);
-  state.words = shuffle([...words]);
+  let words = shuffle([...pool]);
+  if (prefs.length > 0) words = words.slice(0, prefs.length);
+  state.words = words;
 
   showScreen('screen-game');
   loadWord();
@@ -508,7 +617,7 @@ document.addEventListener('click', e => {
 
 // ─── Init ─────────────────────────────────────────────────
 async function init() {
-  loadDisplaySettings();
+  loadPrefs();
   applyDisplaySettings();
 
   // Fullscreen (hidden where the browser can't do it, e.g. iPhone)
@@ -523,20 +632,58 @@ async function init() {
   window.addEventListener('resize', fitLayout);
 
   state.stages = await fetchStages();
+  const maxStage = Math.max(...state.stages.map(s => +s.stage));
+  const fetched = await fetchWords(maxStage);
+  // one entry per distinct word
+  const seen = new Set();
+  state.allWords = fetched.filter(w => !seen.has(w.word) && seen.add(w.word));
+
   populateStageSelect(state.stages);
+  if (!state.stages.some(s => +s.stage === prefs.stage)) prefs.stage = +state.stages[0].stage;
+  document.getElementById('stage-select').value = prefs.stage;
+
+  const known = new Set(letterOrder());
+  prefs.letters = (prefs.letters || lettersForStage(prefs.stage)).filter(l => known.has(l));
+  prefs.letters = letterOrder().filter(l => prefs.letters.includes(l));
+  if (prefs.focus && !prefs.letters.includes(prefs.focus)) prefs.focus = '';
+
+  setActiveToggle('input-mode-group', prefs.input);
+  setActiveToggle('keyboard-layout-group', prefs.keyboard);
+  setActiveToggle('tries-group', String(prefs.tries));
+  setActiveToggle('length-group', String(prefs.length));
+  refreshWordsUI();
 
   // Settings toggles
-  bindToggleGroup('size-group', v => { display.size = v; saveDisplaySettings(); applyDisplaySettings(); });
-  bindToggleGroup('font-group', v => { display.font = v; saveDisplaySettings(); applyDisplaySettings(); });
-  bindToggleGroup('input-mode-group',     v => { state.inputMode = v; });
-  bindToggleGroup('keyboard-layout-group', v => { state.keyboardLayout = v; });
-  bindToggleGroup('tries-group',          v => { state.maxTries = parseInt(v); });
+  bindToggleGroup('size-group', v => { prefs.size = v; savePrefs(); applyDisplaySettings(); });
+  bindToggleGroup('font-group', v => { prefs.font = v; savePrefs(); applyDisplaySettings(); });
+  bindToggleGroup('input-mode-group',      v => { prefs.input = v; savePrefs(); });
+  bindToggleGroup('keyboard-layout-group', v => { prefs.keyboard = v; savePrefs(); });
+  bindToggleGroup('tries-group',           v => { prefs.tries = parseInt(v); savePrefs(); });
+  bindToggleGroup('length-group',          v => { prefs.length = parseInt(v); savePrefs(); });
 
-  // Splash
-  document.getElementById('btn-quick-start').addEventListener('click', () => {
-    const s = state.stages[0]; // always start at stage 1
-    startGame(s.stage, 3, 'drag', 'intro');
+  // Word selection controls
+  document.getElementById('stage-select').addEventListener('change', e => {
+    prefs.stage = parseInt(e.target.value);
+    setLetters(lettersForStage(prefs.stage));
   });
+  document.getElementById('focus-select').addEventListener('change', e => {
+    prefs.focus = e.target.value;
+    savePrefs();
+    refreshWordsUI();
+  });
+  document.getElementById('btn-letters-all').addEventListener('click', () => {
+    prefs.stage = Math.max(...state.stages.map(s => +s.stage));
+    document.getElementById('stage-select').value = prefs.stage;
+    setLetters(letterOrder());
+  });
+  document.getElementById('btn-letters-clear').addEventListener('click', () => setLetters([]));
+  document.getElementById('btn-letters-new').addEventListener('click', () => {
+    const stageLetters = lettersForStage(prefs.stage);
+    setLetters(stageLetters, stageLetters[stageLetters.length - 1]);
+  });
+
+  // Splash: Quick Start uses whatever was set last (stage 1 the first time)
+  document.getElementById('btn-quick-start').addEventListener('click', startGame);
 
   document.getElementById('btn-options').addEventListener('click', () => {
     showScreen('screen-settings');
@@ -547,13 +694,7 @@ async function init() {
     showScreen('screen-splash');
   });
 
-  document.getElementById('btn-start').addEventListener('click', () => {
-    const stageNum = parseInt(document.getElementById('stage-select').value);
-    const maxTries = parseInt(document.querySelector('#tries-group .toggle.active').dataset.value);
-    const inputMode = document.querySelector('#input-mode-group .toggle.active').dataset.value;
-    const kbLayout  = document.querySelector('#keyboard-layout-group .toggle.active').dataset.value;
-    startGame(stageNum, maxTries, inputMode, kbLayout);
-  });
+  document.getElementById('btn-start').addEventListener('click', startGame);
 
   // Game
   document.getElementById('btn-exit-game').addEventListener('click', () => {
@@ -562,9 +703,7 @@ async function init() {
   });
 
   // End
-  document.getElementById('btn-play-again').addEventListener('click', () => {
-    startGame(state.stage, state.maxTries, state.inputMode, state.keyboardLayout);
-  });
+  document.getElementById('btn-play-again').addEventListener('click', startGame);
 
   document.getElementById('btn-new-game').addEventListener('click', () => {
     showScreen('screen-settings');

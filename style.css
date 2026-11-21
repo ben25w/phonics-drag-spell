@@ -261,6 +261,95 @@ select {
 .font-preview-letters { font-family: var(--font-letters); font-size: 2.4rem; font-weight: 700; letter-spacing: 0.25em; line-height: 1.4; }
 .font-preview-word    { font-family: var(--font-word);    font-size: 1.8rem; line-height: 1.4; }
 
+.settings-heading {
+  width: 100%;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Letter picker */
+.letter-picker {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.letter-chip {
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 2px solid var(--tile-border);
+  background: var(--white);
+  border-radius: 10px;
+  font-family: var(--font-letters);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-heading);
+  cursor: pointer;
+  -webkit-user-select: none;
+}
+.letter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+.quick-picks { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+.chip-btn {
+  padding: 0.45rem 0.9rem;
+  min-height: 44px;
+  border: 2px solid var(--tile-border);
+  background: var(--white);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+/* Word list */
+.word-panel {
+  width: 100%;
+  background: var(--white);
+  border: 2px solid var(--tile-border);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+}
+.word-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-heading);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.word-hint { font-size: 0.85rem; color: var(--text-muted); margin: 0.3rem 0 0.6rem; }
+.word-list { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: 14rem; overflow-y: auto; touch-action: pan-y; }
+.word-chip {
+  padding: 0.4rem 0.8rem;
+  min-height: 44px;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-radius: 999px;
+  font-family: var(--font-letters);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.word-chip.off {
+  background: transparent;
+  border-color: var(--tile-border);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.settings-content .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* ─── Game ───────────────────────────────────────────────── */
 #screen-game { background: var(--bg); }
 

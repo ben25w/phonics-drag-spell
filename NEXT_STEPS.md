@@ -13,6 +13,12 @@
 - Letter font picker (Print / Cursive) saved between sessions. Andika and Playwrite GB S/J are in `fonts/`.
 - Correct answers now show the finished word instead of "Correct!".
 
+## Phase 2 built locally, not yet deployed
+- Options: tick the letters in play (quick picks: Up to stage, All letters, Clear, New letter only), "Must include" letter, round length (5 / 10 / 20 / all), word list where tapping a word leaves it out. Everything is remembered.
+- Quick Start now uses the last-used options (stage 1 the first time).
+- `server.cjs` serves the real stages and words from `seed.sql` locally, so no Cloudflare is needed to try it.
+- This settles the "current stage only vs all words up to the stage" question: both are one tap.
+
 ## Next decisions
 - Choose and configure a proper public URL, for example a custom Cloudflare Pages domain under `benwiddowson.com`.
 - Decide the proper app name and update the browser title and splash screen.
